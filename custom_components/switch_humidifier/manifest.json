@@ -1,7 +1,7 @@
 {
   "domain": "switch_humidifier",
   "name": "Switch Humidifier",
-  "documentation": "",
+  "documentation": "https://github.com/adrianByv/home-assistant-custom-components-switch-humidifier",
   "requirements": [],
   "codeowners": ["@adrianByv"]
 }
