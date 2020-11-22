@@ -1,0 +1,7 @@
+{
+  "domain": "switch_humidifier",
+  "name": "Switch Humidifier",
+  "documentation": "",
+  "requirements": [],
+  "codeowners": ["@adrianByv"]
+}
