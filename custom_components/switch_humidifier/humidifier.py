@@ -1,5 +1,7 @@
 """Switch Humidifier Platform"""
 import logging
+import json
+import os
 
 import voluptuous as vol
 
@@ -86,8 +88,6 @@ class SwitchHumidifier(HumidifierEntity):
     self._sensor_id = sensor_id
     self._switch_id = switch_id  
 
-    self._target_humidity = DEFAULT_HUMIDITY
-
     self._humidity = DEFAULT_HUMIDITY
 
     self._switch_state = DEFAULT_SWITCH_STATE
@@ -100,6 +100,37 @@ class SwitchHumidifier(HumidifierEntity):
     self._self_changed_switch = False
     
     self._name = name
+
+    # Persistence file to store persistent data
+    self._persistence_final_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "persistence.json")
+
+    try:
+      if os.path.isfile(self._persistence_final_path):
+        self._persistence_json = json.load(open(self._persistence_final_path, 'r'))
+      else:
+        _LOGGER.warning("file doesnt exist")
+        self._persistence_json = json.loads('{"target": ' + str(DEFAULT_HUMIDITY) + '}')
+
+      self._target_humidity = self._persistence_json['target']
+      self.save_target()
+
+    except Exception as e:
+      _LOGGER.error("Error occured loading: %s", str(e))
+      self._target_humidity = DEFAULT_HUMIDITY
+
+  def save_target(self): 
+    """set target humidity to persistent JSON and store it."""
+    self._persistence_json['target'] = self._target_humidity
+    self.persistence_save()
+
+  def persistence_save(self): 
+    """Store persistent JSON as file."""
+    if self._persistence_json is not None: #Check we have something to save
+      try:
+        with open(self._persistence_final_path, 'w') as fil:
+          fil.write(json.dumps(self._persistence_json, ensure_ascii=False))
+      except Exception as e:
+        _LOGGER.error("Error occured saving: %s", str(e))
 
   def update(self):
     """Update called periodically"""
@@ -144,6 +175,7 @@ class SwitchHumidifier(HumidifierEntity):
     """Set target humidity."""
     _LOGGER.debug('set_humidity')
     self._target_humidity = humidity
+    self.save_target()
 
   def turn_on(self, **kwargs):
     """Turn the device ON."""
