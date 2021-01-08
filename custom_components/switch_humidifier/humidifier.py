@@ -38,6 +38,8 @@ DEFAULT_NAME = 'humidifier'
 CONF_SENSOR_ID = 'sensor_id'
 CONF_SWITCH_ID = 'switch_id'
 CONF_TYPE = 'type'
+CONF_START_DELTA = 'start_delta'
+CONF_STOP_DELTA = 'stop_delta'
 
 
 DEHUMIDIFIER_TYPE = 'dehumidifier'
@@ -50,6 +52,8 @@ TYPES = [
 
 DEFAULT_TYPE = DEHUMIDIFIER_TYPE
 DEFAULT_HUMIDITY = 50
+DEFAULT_START_DELTA = 0.1
+DEFAULT_STOP_DELTA = 0.1
 DEFAULT_SWITCH_STATE = STATE_OFF
 MIN_HUMIDITY = 0
 MAX_HUMIDITY = 100
@@ -60,6 +64,8 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     vol.Required(CONF_SENSOR_ID): cv.string,
     vol.Required(CONF_SWITCH_ID): cv.string,
     vol.Optional(CONF_TYPE, default=DEFAULT_TYPE): vol.All(cv.string, vol.In(TYPES)),
+    vol.Optional(CONF_START_DELTA, default=DEFAULT_START_DELTA): vol.Coerce(float),
+    vol.Optional(CONF_STOP_DELTA, default=DEFAULT_STOP_DELTA): vol.Coerce(float),
   }
 )
 
@@ -71,8 +77,10 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
   device_class = DEVICE_CLASS_DEHUMIDIFIER
   if config[CONF_TYPE] == HUMIDIFIER_TYPE:
     device_class = DEVICE_CLASS_HUMIDIFIER
+  start_delta = config[CONF_START_DELTA]
+  stop_delta = config[CONF_STOP_DELTA]
   devices = []
-  switchHumidifier = SwitchHumidifier(name, sensor_id, switch_id, device_class)
+  switchHumidifier = SwitchHumidifier(name, sensor_id, switch_id, device_class, start_delta, stop_delta)
   devices.append(switchHumidifier)
   add_entities(devices, True)
 
@@ -83,7 +91,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 
 class SwitchHumidifier(HumidifierEntity):
 	
-  def __init__(self, name, sensor_id, switch_id, device_class):
+  def __init__(self, name, sensor_id, switch_id, device_class, start_delta, stop_delta):
     """Initialize the humidifier."""
     self._sensor_id = sensor_id
     self._switch_id = switch_id  
@@ -95,6 +103,10 @@ class SwitchHumidifier(HumidifierEntity):
     self._is_on = DEFAULT_SWITCH_STATE == STATE_ON
 
     self._device_class = device_class
+
+    self._start_delta = start_delta
+
+    self._stop_delta = stop_delta
 
     # To cheack if the switch state change if fired by the platform
     self._self_changed_switch = False
@@ -218,9 +230,15 @@ class SwitchHumidifier(HumidifierEntity):
     if self._is_on == True:
       # Platform is on, check humidity
       if self.device_class == DEVICE_CLASS_DEHUMIDIFIER:
-        self._turn_switch_on() if self._target_humidity < self._humidity else self._turn_switch_off()
+        if self._switch_state == STATE_ON and self._humidity < self._target_humidity - self._stop_delta:
+          self._turn_switch_off()
+        elif self._switch_state == STATE_OFF and self._humidity > (self._target_humidity + self._start_delta):
+          self._turn_switch_on()
       elif self.device_class == DEVICE_CLASS_HUMIDIFIER:
-        self._turn_switch_on() if self._target_humidity > self._humidity else self._turn_switch_off()
+        if self._switch_state == STATE_ON and self._humidity > (self._target_humidity + self._stop_delta):
+          self._turn_switch_off()
+        elif self._switch_state == STATE_OFF and self._humidity < (self._target_humidity - self._start_delta):
+          self._turn_switch_on()
     else:
       # Platform is off
       self._turn_switch_off()

@@ -33,6 +33,8 @@ humidifier:
     switch_id: switch.deshumidifier
     sensor_id: sensor.humidity
     type: dehumidifier
+    start_delta: 0.2
+    stop_delta: 0.2
 ```
 
 ### Parameters
@@ -42,6 +44,10 @@ humidifier:
 - `sensor_id` (Required): The humidity sensor entintity
 - `type` (Optional): Posible values are `humidifier` or `dehumidifier`
   - Default: `dehumidifier`
+- `start_delta` (Optional): The delta % added to start if it's off
+  - Default: `0.1`
+- `stop_delta` (Optional): The delta % added to stop if it's on
+  - Default: `0.1`
 
 It should also support homekit.
 
