@@ -205,7 +205,8 @@ class SwitchHumidifier(HumidifierEntity):
 
   def _state_changed(self, entity_id, old_state, new_state):
     """Called on sensor or switch state change"""
-    if not new_state is None and not new_state.state == 'unknown' and not new_state.state == 'unavailable':
+    if not new_state is None and not new_state.state == 'unknown' and not new_state.state == 'unavailable' and not old_state.state == new_state.state:
+      # Check if they are different states
       if entity_id == self._sensor_id:
         # Update humidity value
         self._humidity = float(new_state.state)
